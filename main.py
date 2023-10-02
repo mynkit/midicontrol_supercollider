@@ -3,6 +3,7 @@
 
 import pygame.midi as m
 from pythonosc import udp_client, osc_server
+import random
 
 
 client_to_sc = udp_client.SimpleUDPClient('127.0.0.1', 57110)
@@ -116,7 +117,7 @@ def play_sc(num, send_type, midi_value):
     if send_type == "Vol":
         client_to_sc.send_message("/n_set", [
             num,
-            "amp", midi_value*1
+            "amp", midi_value*1.5
         ])
     if send_type == "Pan":
         client_to_sc.send_message("/n_set", [
@@ -132,7 +133,8 @@ if not play:
             "sine", num, 1, 0,
             "amp", 0.0,
             "freq", get_default_freq(num),
-            "reverb", 0.7, "ice", 0
+            "reverb", 0.8, "ice", 0,
+            "vibratoFreq", random.random()*0.3, "vibratoDepth", random.random()*0.2
         ])
     play = 1
     
