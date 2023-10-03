@@ -129,8 +129,9 @@ def play_sc(num, send_type, midi_value):
 if not play:
     for i in range(8):
         num = i+1
+        nodeId = num + 500
         client_to_sc.send_message("/s_new", [
-            "sine", num, 1, 0,
+            "sine", nodeId, 0, 1,
             "amp", 0.0,
             "freq", get_default_freq(num),
             "reverb", 0.8, "ice", 0,
@@ -157,4 +158,5 @@ except KeyboardInterrupt:
 
     for i in range(8):
         num = i + 1
-        client_to_sc.send_message("/n_free", num)
+        nodeId = num + 500
+        client_to_sc.send_message("/n_free", nodeId)
