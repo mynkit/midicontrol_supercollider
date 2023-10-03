@@ -92,7 +92,7 @@ def play_sc(num, send_type, midi_value):
     nodeId = get_nodeId(num)
 
     if send_type == "ButtonTop" and midi_value==1:
-        if octave_state[num] < 4:
+        if octave_state[num] < 3:
             octave_state[num] += 1
         client_to_sc.send_message("/n_set", [
             nodeId,
