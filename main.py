@@ -29,6 +29,8 @@ for i in range(i_num):
 
 midi_input = m.Input(target_device_id)
 
+def get_nodeId(num):
+    return num + 500
 
 def get_channel(midi_id):
     a = [13, 14, 15, 16, 17, 18, 19, 20]
@@ -87,12 +89,13 @@ def play_sc(num, send_type, midi_value):
     amp = 0
     
     freq = get_default_freq(num)
+    nodeId = get_nodeId(num)
 
     if send_type == "ButtonTop" and midi_value==1:
         if octave_state[num] < 4:
             octave_state[num] += 1
         client_to_sc.send_message("/n_set", [
-            num,
+            nodeId,
             "freq", freq * (2**octave_state[num])
         ])
 
@@ -100,28 +103,28 @@ def play_sc(num, send_type, midi_value):
         if octave_state[num] > -2:
             octave_state[num] -= 1
         client_to_sc.send_message("/n_set", [
-            num,
+            nodeId,
             "freq", freq * (2**octave_state[num])
         ])
     
     if send_type == "A":
         client_to_sc.send_message("/n_set", [
-            num,
+            nodeId,
             "parFreq", midi_value * 10
         ])
     if send_type == "B":
         client_to_sc.send_message("/n_set", [
-            num,
+            nodeId,
             "pan2Freq", midi_value * 110
         ])
     if send_type == "Vol":
         client_to_sc.send_message("/n_set", [
-            num,
+            nodeId,
             "amp", midi_value*1.5
         ])
     if send_type == "Pan":
         client_to_sc.send_message("/n_set", [
-            num,
+            nodeId,
             "ice", midi_value*1
         ])
 
@@ -129,7 +132,7 @@ def play_sc(num, send_type, midi_value):
 if not play:
     for i in range(8):
         num = i+1
-        nodeId = num + 500
+        nodeId = get_nodeId(num)
         client_to_sc.send_message("/s_new", [
             "sine", nodeId, 0, 1,
             "amp", 0.0,
@@ -158,5 +161,5 @@ except KeyboardInterrupt:
 
     for i in range(8):
         num = i + 1
-        nodeId = num + 500
+        nodeId = get_nodeId(num)
         client_to_sc.send_message("/n_free", nodeId)
