@@ -18,6 +18,7 @@ target_device_name = 'Launch Control XL'
 target_device_id = 0
 play = 0
 octave_state = {i+1: 0 for i in range(8)}
+mode_state = {"mode": 0}
 
 for i in range(i_num):
     info = m.get_device_info(i)
@@ -39,6 +40,7 @@ def get_channel(midi_id):
     vol = [77, 78, 79, 80, 81, 82, 83, 84]
     buttonTop = [41, 42, 43, 44, 57, 58, 59, 60]
     buttonBottom = [73, 74, 75, 76, 89, 90, 91, 92]
+    modeChangeButton = [0]
     if midi_id in a:
         return a.index(midi_id) + 1, 'A'
     elif midi_id in b:
@@ -51,9 +53,11 @@ def get_channel(midi_id):
         return buttonTop.index(midi_id) + 1, 'ButtonTop'
     elif midi_id in buttonBottom:
         return buttonBottom.index(midi_id) + 1, 'ButtonBottom'
+    elif midi_id in modeChangeButton:
+        return 0, 'ModeChangeButton'
     else:
         print(f"midi_id: {midi_id}")
-        return 0, None
+        return -1, None
 
 def get_default_freq(num):
     freq = 440
@@ -84,50 +88,64 @@ def get_default_freq(num):
     return freq
 
 
-def play_sc(num, send_type, midi_value):
+def play_sc(num, send_type, midi_value, mode):
     freq = 440
-    amp = 0
-    
-    freq = get_default_freq(num)
+
+    if mode == 1:
+        num += 8
+
+    if not num <= 15:
+        print("このnodeにsynthは存在しません")
+        return
+
     nodeId = get_nodeId(num)
-
-    if send_type == "ButtonTop" and midi_value==1:
-        if octave_state[num] < 3:
-            octave_state[num] += 1
-        client_to_sc.send_message("/n_set", [
-            nodeId,
-            "freq", freq * (2**octave_state[num])
-        ])
-
-    if send_type == "ButtonBottom" and midi_value==1:
-        if octave_state[num] > -2:
-            octave_state[num] -= 1
-        client_to_sc.send_message("/n_set", [
-            nodeId,
-            "freq", freq * (2**octave_state[num])
-        ])
     
-    if send_type == "A":
-        client_to_sc.send_message("/n_set", [
-            nodeId,
-            "parFreq", midi_value * 10
-        ])
-    if send_type == "B":
-        client_to_sc.send_message("/n_set", [
-            nodeId,
-            "pan2Freq", midi_value * 110
-        ])
-    if send_type == "Vol":
-        client_to_sc.send_message("/n_set", [
-            nodeId,
-            "amp", midi_value*5
-        ])
-    if send_type == "Pan":
-        client_to_sc.send_message("/n_set", [
-            nodeId,
-            "ice", midi_value*1
-        ])
+    if mode == 0:
 
+        freq = get_default_freq(num)
+
+        if send_type == "ButtonTop" and midi_value==1:
+            if octave_state[num] < 3:
+                octave_state[num] += 1
+            client_to_sc.send_message("/n_set", [
+                nodeId,
+                "freq", freq * (2**octave_state[num])
+            ])
+
+        if send_type == "ButtonBottom" and midi_value==1:
+            if octave_state[num] > -2:
+                octave_state[num] -= 1
+            client_to_sc.send_message("/n_set", [
+                nodeId,
+                "freq", freq * (2**octave_state[num])
+            ])
+        
+        if send_type == "A":
+            client_to_sc.send_message("/n_set", [
+                nodeId,
+                "parFreq", midi_value * 10
+            ])
+        if send_type == "B":
+            client_to_sc.send_message("/n_set", [
+                nodeId,
+                "pan2Freq", midi_value * 110
+            ])
+        if send_type == "Vol":
+            client_to_sc.send_message("/n_set", [
+                nodeId,
+                "amp", midi_value*5
+            ])
+        if send_type == "Pan":
+            client_to_sc.send_message("/n_set", [
+                nodeId,
+                "ice", midi_value*1
+            ])
+    elif mode == 1:
+        if send_type == "Vol":
+            client_to_sc.send_message("/n_set", [
+                nodeId,
+                "amp", midi_value*5
+            ])
 
 if not play:
     for i in range(8):
@@ -140,6 +158,43 @@ if not play:
             "reverb", 0.8, "ice", 0,
             "vibratoFreq", random.random()*0.3, "vibratoDepth", random.random()*0.2
         ])
+    client_to_sc.send_message("/s_new", [
+            "sine", get_nodeId(9), 0, 1,
+            "amp", 0.0,
+            "freq", 640.487/4,
+            "reverb", 0.7, "ice", 0,
+            "vibratoFreq", 0, "vibratoDepth", 0.3,
+            "parFreq", 1.5, "pan2Freq", 1.0,
+        ])
+    client_to_sc.send_message("/s_new", [
+            "sine", get_nodeId(10), 0, 1,
+            "amp", 0.0,
+            "freq", 570.609/4,
+            "reverb", 0.6, "ice", 0,
+            "vibratoFreq", 0, "vibratoDepth", 2,
+            "parFreq", 0, "pan2Freq", 30.0,
+        ])
+    client_to_sc.send_message("/s_new", [
+            "sea", get_nodeId(11), 0, 1,
+            "amp", 0.0,
+        ])
+    client_to_sc.send_message("/s_new", [
+            "deepsea", get_nodeId(12), 0, 1,
+            "amp", 0.0,
+        ])
+    client_to_sc.send_message("/s_new", [
+            "rain", get_nodeId(13), 0, 1,
+            "amp", 0.0,
+        ])
+    client_to_sc.send_message("/s_new", [
+            "river", get_nodeId(14), 0, 1,
+            "amp", 0.0,
+        ])
+    client_to_sc.send_message("/s_new", [
+            "forest", get_nodeId(15), 0, 1,
+            "amp", 0.0,
+        ])
+
     play = 1
     
 
@@ -152,14 +207,24 @@ try:
             midi_value = event[2] / 127
             num, send_type = get_channel(midi_id)
 
-            print(f"midi{num}{send_type}", midi_value)
+            if num == 0:
+                # mode change
+                mode_state["mode"] = abs(1 - mode_state["mode"])
+            else:
+                mode = mode_state["mode"]
+                print("mode: ", mode)
+                print("octave_state: ", octave_state)
 
-            play_sc(num, send_type, midi_value)
+                print(f"midi{num}{send_type}", midi_value)
+
+                play_sc(num, send_type, midi_value, mode)
+                    
+
 
 except KeyboardInterrupt:
     midi_input.close()
 
-    for i in range(8):
+    for i in range(15):
         num = i + 1
         nodeId = get_nodeId(num)
         client_to_sc.send_message("/n_free", nodeId)
