@@ -120,7 +120,7 @@ def play_sc(num, send_type, midi_value):
     if send_type == "Vol":
         client_to_sc.send_message("/n_set", [
             nodeId,
-            "amp", midi_value*1.5
+            "amp", midi_value*5
         ])
     if send_type == "Pan":
         client_to_sc.send_message("/n_set", [
