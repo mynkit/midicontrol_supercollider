@@ -4,7 +4,7 @@
 import pygame.midi as m
 from pythonosc import udp_client, osc_server
 import random
-
+import asyncio
 
 client_to_sc = udp_client.SimpleUDPClient('127.0.0.1', 57110)
 
@@ -198,33 +198,127 @@ if not play:
     play = 1
     
 
-try:
-    while True:
-        if midi_input.poll(): # MIDIが受信されると１
-            midi_events = midi_input.read(4) # 読み取る入力イベントの数　
-            event = midi_events[0][0]
-            midi_id = event[1]
-            midi_value = event[2] / 127
-            num, send_type = get_channel(midi_id)
+# try:
+#     while True:
+#         if midi_input.poll(): # MIDIが受信されると１
+#             midi_events = midi_input.read(4) # 読み取る入力イベントの数　
+#             event = midi_events[0][0]
+#             midi_id = event[1]
+#             midi_value = event[2] / 127
+#             num, send_type = get_channel(midi_id)
 
-            if num == 0:
-                # mode change
-                mode_state["mode"] = abs(1 - mode_state["mode"])
-            else:
-                mode = mode_state["mode"]
-                print("mode: ", mode)
-                print("octave_state: ", octave_state)
+#             if num == 0:
+#                 # mode change
+#                 mode_state["mode"] = abs(1 - mode_state["mode"])
+#             else:
+#                 mode = mode_state["mode"]
+#                 print("mode: ", mode)
+#                 print("octave_state: ", octave_state)
 
-                print(f"midi{num}{send_type}", midi_value)
+#                 print(f"midi{num}{send_type}", midi_value)
 
-                play_sc(num, send_type, midi_value, mode)
+#                 play_sc(num, send_type, midi_value, mode)
                     
 
 
-except KeyboardInterrupt:
-    midi_input.close()
+# except KeyboardInterrupt:
+#     midi_input.close()
 
-    for i in range(15):
-        num = i + 1
-        nodeId = get_nodeId(num)
-        client_to_sc.send_message("/n_free", nodeId)
+#     for i in range(15):
+#         num = i + 1
+#         nodeId = get_nodeId(num)
+#         client_to_sc.send_message("/n_free", nodeId)
+
+
+
+async def async_play_sc(num, send_type, midi_value, mode):
+    freq = 440
+
+    if mode == 1:
+        num += 8
+
+    if not num <= 15:
+        print("このnodeにsynthは存在しません")
+        return
+
+    nodeId = get_nodeId(num)
+
+    if mode == 0:
+        freq = get_default_freq(num)
+
+        if send_type == "ButtonTop" and midi_value == 1:
+            if octave_state[num] < 3:
+                octave_state[num] += 1
+            client_to_sc.send_message("/n_set", [
+                nodeId,
+                "freq", freq * (2**octave_state[num])
+            ])
+
+        if send_type == "ButtonBottom" and midi_value == 1:
+            if octave_state[num] > -2:
+                octave_state[num] -= 1
+            client_to_sc.send_message("/n_set", [
+                nodeId,
+                "freq", freq * (2**octave_state[num])
+            ])
+
+        if send_type == "A":
+            client_to_sc.send_message("/n_set", [
+                nodeId,
+                "parFreq", midi_value * 10
+            ])
+        if send_type == "B":
+            client_to_sc.send_message("/n_set", [
+                nodeId,
+                "pan2Freq", midi_value * 110
+            ])
+        if send_type == "Vol":
+            client_to_sc.send_message("/n_set", [
+                nodeId,
+                "amp", midi_value*5
+            ])
+        if send_type == "Pan":
+            client_to_sc.send_message("/n_set", [
+                nodeId,
+                "ice", midi_value*1
+            ])
+    elif mode == 1:
+        if send_type == "Vol":
+            client_to_sc.send_message("/n_set", [
+                nodeId,
+                "amp", midi_value*5
+            ])
+
+async def main():
+    try:
+        while True:
+            if midi_input.poll():
+                midi_events = midi_input.read(4)
+                event = midi_events[0][0]
+                midi_id = event[1]
+                midi_value = event[2] / 127
+                num, send_type = get_channel(midi_id)
+
+                if num == 0:
+                    mode_state["mode"] = abs(1 - mode_state["mode"])
+                else:
+                    mode = mode_state["mode"]
+                    print("mode:", mode)
+                    print("octave_state:", octave_state)
+                    print(f"midi{num}{send_type}", midi_value)
+
+                    # 非同期関数を呼び出し
+                    await async_play_sc(num, send_type, midi_value, mode)
+
+            await asyncio.sleep(0.001)  # 適切な待機時間を設定
+
+    except KeyboardInterrupt:
+        midi_input.close()
+
+        for i in range(15):
+            num = i + 1
+            nodeId = num + 500
+            client_to_sc.send_message("/n_free", nodeId)
+
+# 非同期イベントループを開始
+asyncio.run(main())
