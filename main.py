@@ -7,6 +7,7 @@ import random
 import asyncio
 
 client_to_sc = udp_client.SimpleUDPClient('127.0.0.1', 57110)
+client_to_tidalm = udp_client.SimpleUDPClient('127.0.0.1', 6061)
 
 m.init()            # MIDIデバイスを初期化
 i_num=m.get_count() # MIDIデバイスの数
@@ -237,8 +238,13 @@ async def async_play_sc(num, send_type, midi_value, mode):
     if mode == 1:
         num += 8
 
-    if not num <= 15:
+    if not num <= 16:
         print("このnodeにsynthは存在しません")
+        return
+    
+    if num == 16:
+        # tidalm
+        client_to_tidalm.send_message("/ctrl", ["zureAmp", midi_value])
         return
 
     nodeId = get_nodeId(num)
